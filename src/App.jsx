@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // Load any previously-typed draft so data survives page reloads, tab
 // discards (long idle / Windows+L lock), and accidental closes.
@@ -21,6 +21,7 @@ export default function App() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const fileRef = useRef(null);
 
   // Persist the draft on every change (text fields only — a PDF file
   // cannot be saved and must be re-attached after a reload).
@@ -39,6 +40,7 @@ export default function App() {
     setPdf(null);
     setResult(null);
     setError('');
+    if (fileRef.current) fileRef.current.value = '';
     localStorage.removeItem(DRAFT_KEY);
   }
 
@@ -53,7 +55,7 @@ export default function App() {
     setResult(null);
 
     if (!from || !subject || !body || recipientCount === 0) {
-      setError('Please fill From, Subject, Body, and at least one valid recipient.');
+      setError('Please fill From, Subject, Message, and at least one valid recipient.');
       return;
     }
 
@@ -79,92 +81,183 @@ export default function App() {
   }
 
   return (
-    <div className="container">
-      <h1>Cold Mail Sender</h1>
-      <p>Fill the email once, list multiple recipients, and send to all.</p>
-
-      <form onSubmit={handleSubmit}>
-        <label>
-          From
-          <input
-            type="text"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            placeholder='e.g. "Your Name" <you@example.com>'
-          />
-          <div className="hint">Must match your verified Brevo sender email.</div>
-        </label>
-
-        <label>
-          To (multiple recipients)
-          <textarea
-            value={recipients}
-            onChange={(e) => setRecipients(e.target.value)}
-            rows={4}
-            placeholder="recruiter1@company.com, recruiter2@company.com&#10;recruiter3@company.com"
-          />
-          <div className="hint">
-            Separate with commas, spaces, semicolons, or new lines. Detected:{' '}
-            <strong>{recipientCount}</strong> valid email{recipientCount === 1 ? '' : 's'}.
+    <div className="page">
+      <main className="card">
+        <header className="brand">
+          <div className="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+              <path
+                d="M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5v-9Z"
+                stroke="currentColor"
+                strokeWidth="1.6"
+              />
+              <path
+                d="m4 8 7.11 4.87a1.5 1.5 0 0 0 1.78 0L20 8"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
           </div>
-        </label>
+          <div className="brand-text">
+            <h1>Cold Mail Sender</h1>
+            <p>Write once, reach everyone — send cold emails to your whole list in one click.</p>
+          </div>
+        </header>
 
-        <label>
-          Subject
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="Subject line"
-          />
-        </label>
+        <form onSubmit={handleSubmit} className="form">
+          <div className="field">
+            <label htmlFor="from">From</label>
+            <input
+              id="from"
+              type="text"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              placeholder='"Your Name" <you@example.com>'
+            />
+            <span className="hint">Must match your verified sender email.</span>
+          </div>
 
-        <label>
-          Body
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows={10}
-            placeholder="Write your cold email here..."
-          />
-        </label>
+          <div className="field">
+            <div className="field-head">
+              <label htmlFor="to">Recipients</label>
+              <span className={`badge ${recipientCount ? 'badge-ok' : ''}`}>
+                {recipientCount} valid
+              </span>
+            </div>
+            <textarea
+              id="to"
+              value={recipients}
+              onChange={(e) => setRecipients(e.target.value)}
+              rows={3}
+              placeholder="recruiter1@company.com, recruiter2@company.com&#10;recruiter3@company.com"
+            />
+            <span className="hint">Separate with commas, spaces, semicolons, or new lines.</span>
+          </div>
 
-        <label>
-          Attach PDF (optional)
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => setPdf(e.target.files?.[0] || null)}
-          />
-        </label>
+          <div className="field">
+            <label htmlFor="subject">Subject</label>
+            <input
+              id="subject"
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="A short, catchy subject line"
+            />
+          </div>
 
-        <div className="actions">
-          <button type="submit" disabled={sending}>
-            {sending ? 'Sending...' : `Send to ${recipientCount} recipient${recipientCount === 1 ? '' : 's'}`}
-          </button>
-          <button type="button" className="secondary" onClick={clearForm} disabled={sending}>
-            Clear
-          </button>
-        </div>
-      </form>
+          <div className="field">
+            <label htmlFor="body">Message</label>
+            <textarea
+              id="body"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={9}
+              placeholder="Write your cold email here…"
+            />
+          </div>
 
-      {error && <div className="result failed"><strong>Error:</strong> {error}</div>}
+          <div className="field">
+            <label>Attachment <span className="opt">(optional)</span></label>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/pdf"
+              className="file-input"
+              onChange={(e) => setPdf(e.target.files?.[0] || null)}
+            />
+            <div className="dropzone" onClick={() => fileRef.current?.click()}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true">
+                <path d="M12 16V4m0 0 4 4m-4-4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              {pdf ? (
+                <span className="file-picked">
+                  📄 {pdf.name}
+                  <button
+                    type="button"
+                    className="file-remove"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPdf(null);
+                      if (fileRef.current) fileRef.current.value = '';
+                    }}
+                    aria-label="Remove file"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ) : (
+                <span className="dz-text">
+                  <strong>Click to attach a PDF</strong> — e.g. your resume
+                </span>
+              )}
+            </div>
+          </div>
 
-      {result && (
-        <div className="result">
-          <h3>
-            Sent {result.summary.sent} / {result.summary.total} ({result.summary.failed} failed)
-          </h3>
-          <ul>
-            {result.results.map((r, i) => (
-              <li key={i} className={r.status === 'sent' ? 'sent' : 'failed'}>
-                {r.to} — {r.status}
-                {r.error ? ` (${r.error})` : ''}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+          <div className="actions">
+            <button type="submit" className="btn-primary" disabled={sending}>
+              {sending ? (
+                <>
+                  <span className="spinner" aria-hidden="true" /> Sending…
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                    <path d="M4 12 20 4l-6 16-2.5-6.5L4 12Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                  </svg>
+                  Send to {recipientCount} recipient{recipientCount === 1 ? '' : 's'}
+                </>
+              )}
+            </button>
+            <button type="button" className="btn-ghost" onClick={clearForm} disabled={sending}>
+              Clear
+            </button>
+          </div>
+        </form>
+
+        {error && (
+          <div className="alert alert-error" role="alert">
+            <span className="alert-icon">!</span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {result && (
+          <div className="report">
+            <div className="stats">
+              <div className="stat stat-ok">
+                <b>{result.summary.sent}</b>
+                <span>Sent</span>
+              </div>
+              <div className="stat stat-fail">
+                <b>{result.summary.failed}</b>
+                <span>Failed</span>
+              </div>
+              <div className="stat">
+                <b>{result.summary.total}</b>
+                <span>Total</span>
+              </div>
+            </div>
+            <ul className="report-list">
+              {result.results.map((r, i) => (
+                <li key={i} className={r.status}>
+                  <span className="dot" />
+                  <span className="addr">{r.to}</span>
+                  <span className="rstatus">
+                    {r.status}
+                    {r.error ? ` — ${r.error}` : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </main>
+
+      <footer className="foot">
+        Sends via a verified sender · Your drafts are saved automatically
+      </footer>
     </div>
   );
 }
