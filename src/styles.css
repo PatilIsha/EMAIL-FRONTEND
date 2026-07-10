@@ -45,6 +45,9 @@ button {
   font-size: 15px;
 }
 button:disabled { background: #93c5fd; cursor: not-allowed; }
+.actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+button.secondary { background: #e5e7eb; color: #111827; }
+button.secondary:disabled { background: #f3f4f6; color: #9ca3af; }
 .result {
   margin-top: 24px;
   padding: 16px;

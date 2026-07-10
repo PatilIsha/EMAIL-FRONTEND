@@ -1,14 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+// Load any previously-typed draft so data survives page reloads, tab
+// discards (long idle / Windows+L lock), and accidental closes.
+const DRAFT_KEY = 'coldmail_draft';
+function loadDraft() {
+  try {
+    return JSON.parse(localStorage.getItem(DRAFT_KEY)) || {};
+  } catch {
+    return {};
+  }
+}
+const savedDraft = loadDraft();
 
 export default function App() {
-  const [from, setFrom] = useState('');
-  const [recipients, setRecipients] = useState('');
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
+  const [from, setFrom] = useState(savedDraft.from || '');
+  const [recipients, setRecipients] = useState(savedDraft.recipients || '');
+  const [subject, setSubject] = useState(savedDraft.subject || '');
+  const [body, setBody] = useState(savedDraft.body || '');
   const [pdf, setPdf] = useState(null);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+
+  // Persist the draft on every change (text fields only — a PDF file
+  // cannot be saved and must be re-attached after a reload).
+  useEffect(() => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ from, recipients, subject, body })
+    );
+  }, [from, recipients, subject, body]);
+
+  function clearForm() {
+    setFrom('');
+    setRecipients('');
+    setSubject('');
+    setBody('');
+    setPdf(null);
+    setResult(null);
+    setError('');
+    localStorage.removeItem(DRAFT_KEY);
+  }
 
   const recipientCount = recipients
     .split(/[\s,;\n]+/)
@@ -106,9 +138,14 @@ export default function App() {
           />
         </label>
 
-        <button type="submit" disabled={sending}>
-          {sending ? 'Sending...' : `Send to ${recipientCount} recipient${recipientCount === 1 ? '' : 's'}`}
-        </button>
+        <div className="actions">
+          <button type="submit" disabled={sending}>
+            {sending ? 'Sending...' : `Send to ${recipientCount} recipient${recipientCount === 1 ? '' : 's'}`}
+          </button>
+          <button type="button" className="secondary" onClick={clearForm} disabled={sending}>
+            Clear
+          </button>
+        </div>
       </form>
 
       {error && <div className="result failed"><strong>Error:</strong> {error}</div>}
