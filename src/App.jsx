@@ -60,7 +60,7 @@ export default function App() {
             onChange={(e) => setFrom(e.target.value)}
             placeholder='e.g. "Your Name" <you@example.com>'
           />
-          <div className="hint">Must match the SMTP user configured on the server.</div>
+          <div className="hint">Must match your verified Brevo sender email.</div>
         </label>
 
         <label>
