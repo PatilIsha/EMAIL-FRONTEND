@@ -34,7 +34,8 @@ export default function App() {
 
     setSending(true);
     try {
-      const res = await fetch('/send', { method: 'POST', body: fd });
+      const API = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${API}/send`, { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send');
       setResult(data);
